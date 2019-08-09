@@ -1,8 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using Microsoft.AspNetCore.Mvc;
+using SSController.Utils;
+using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
 
 namespace SSController.Controllers
 {
@@ -10,11 +9,35 @@ namespace SSController.Controllers
     [ApiController]
     public class ContainerController : ControllerBase
     {
-        // GET api/values
+        // Get container ip
         [HttpGet]
         public ActionResult<string> Get()
         {
-            return "1.2.3.40";
+            if (!System.IO.File.Exists(this.GetIpFilePath()))
+            {
+                return "";
+            }
+
+            var lines = System.IO.File.ReadLines(GetIpFilePath()).ToArray();
+            if (lines.Length == 0)
+            {
+                return "";
+            }
+
+            return lines[0];
+        }
+
+        // Set ip
+        [HttpPost]
+        public ActionResult Post([FromQuery] string ip)
+        {
+            System.IO.File.WriteAllText(this.GetIpFilePath(), ip);
+            return this.Ok();
+        }
+
+        private string GetIpFilePath()
+        {
+            return Path.Combine(IOUtils.GetDataFolderPath(), "ip.txt");
         }
     }
 }
