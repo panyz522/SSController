@@ -14,7 +14,7 @@ namespace SSController.Controllers
         [HttpGet]
         public ActionResult<string> Get()
         {
-            return "1.2.3.4";
+            return "1.2.3.40";
         }
     }
 }
