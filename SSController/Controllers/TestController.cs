@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using SSController.Services;
 
 namespace SSController.Controllers
@@ -23,7 +18,8 @@ namespace SSController.Controllers
         [HttpGet]
         public string Get()
         {
-            return secretProvider.GetSecret("test");
+            var key = "test";
+            return key + ":" + this.secretProvider.GetSecret(key);
         }
 
         // GET: api/Test/5

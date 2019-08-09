@@ -1,10 +1,8 @@
 ﻿using Microsoft.Azure.KeyVault;
 using Microsoft.Azure.Services.AppAuthentication;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using SSController.Utils;
 using System.IO;
-using System.Text;
 
 namespace SSController.Services
 {
@@ -21,11 +19,11 @@ namespace SSController.Services
         public void Init()
         {
 #if !DEBUG
-            AzureServiceTokenProvider azureServiceTokenProvider = new AzureServiceTokenProvider();
-            keyVaultClient = new KeyVaultClient(new KeyVaultClient.AuthenticationCallback(azureServiceTokenProvider.KeyVaultTokenCallback));
+            var azureServiceTokenProvider = new AzureServiceTokenProvider();
+            this.keyVaultClient = new KeyVaultClient(new KeyVaultClient.AuthenticationCallback(azureServiceTokenProvider.KeyVaultTokenCallback));
 #else
             var text = File.ReadAllText(Path.Combine(IOUtils.GetDataFolderPath(), "testsecrets.json"));
-            keyValuePairs = JObject.Parse(text);
+            this.keyValuePairs = JObject.Parse(text);
 #endif
         }
 
@@ -35,9 +33,9 @@ namespace SSController.Services
             try
             {
 #if !DEBUG
-                sec = keyVaultClient.GetSecretAsync("https://personalkeys0.vault.azure.net/secrets/store-personal0").Result.Value;
+                sec = this.keyVaultClient.GetSecretAsync($@"https://personalkeys0.vault.azure.net/secrets/{key}").Result.Value;
 #else
-                sec = keyValuePairs[key].ToString();
+                sec = this.keyValuePairs[key].ToString();
 #endif
             }
             catch
