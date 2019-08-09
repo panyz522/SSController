@@ -1,7 +1,10 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.Azure.Management.Fluent;
+using SSController.Services;
 using SSController.Utils;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace SSController.Controllers
 {
@@ -9,22 +12,31 @@ namespace SSController.Controllers
     [ApiController]
     public class ContainerController : ControllerBase
     {
+        private readonly BlobClientProvider blobClientProvider;
+
+        public ContainerController(BlobClientProvider blobClientProvider)
+        {
+            this.blobClientProvider = blobClientProvider;
+        }
+
         // Get container ip
         [HttpGet]
-        public ActionResult<string> Get()
+        public async Task<ActionResult<string>> GetAsync()
         {
-            if (!System.IO.File.Exists(this.GetIpFilePath()))
+            // Get Azure auth file for login.
+            var client = this.blobClientProvider.Create("personal0");
+            string authFilePath = Path.Combine(IOUtils.GetDataFolderPath(), ".azureauth");
+            await client.DownloadAllTextAsync("secret/azure.azureauth", authFilePath);
+
+            // Create IAzure and check the container.
+            var azure = Azure.Authenticate(authFilePath).WithDefaultSubscription();
+            var container = azure.ContainerGroups.ListByResourceGroup("gp-japaneast-ctnr").FirstOrDefault();
+            if (container == null)
             {
-                return "";
+                return this.BadRequest("No container found.");
             }
 
-            var lines = System.IO.File.ReadLines(GetIpFilePath()).ToArray();
-            if (lines.Length == 0)
-            {
-                return "";
-            }
-
-            return lines[0];
+            return container.IPAddress;
         }
 
         // Set ip

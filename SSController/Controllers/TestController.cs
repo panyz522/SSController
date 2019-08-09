@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using SSController.Services;
+using System.Threading.Tasks;
 
 namespace SSController.Controllers
 {
@@ -8,18 +9,19 @@ namespace SSController.Controllers
     public class TestController : ControllerBase
     {
         private readonly SecretProvider secretProvider;
+        private readonly BlobClientProvider blobClientProvider;
 
-        public TestController(SecretProvider secretProvider)
+        public TestController(SecretProvider secretProvider, BlobClientProvider blobClientProvider)
         {
             this.secretProvider = secretProvider;
+            this.blobClientProvider = blobClientProvider;
         }
 
         // GET: api/Test
         [HttpGet]
-        public string Get()
+        public async Task<ActionResult<string>> Get()
         {
-            var key = "test";
-            return key + ":" + this.secretProvider.GetSecret(key);
+            return this.Ok();
         }
 
         // GET: api/Test/5
