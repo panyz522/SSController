@@ -13,11 +13,11 @@ namespace SSController.Controllers
     [ApiController]
     public class ContainerController : ControllerBase
     {
-        private readonly BlobClientProvider blobClientProvider;
+        private readonly AzureService azureService;
 
-        public ContainerController(BlobClientProvider blobClientProvider)
+        public ContainerController(AzureService azureService)
         {
-            this.blobClientProvider = blobClientProvider;
+            this.azureService = azureService;
         }
 
         // Get container ip
@@ -25,7 +25,7 @@ namespace SSController.Controllers
         public async Task<ActionResult<string>> GetAsync()
         {
             // Create IAzure and check the container.
-            var container = await GetContainerAsync();
+            var container = await this.azureService.GetContainerAsync();
             if (container == null)
             {
                 return this.BadRequest("No container found.");
@@ -34,46 +34,37 @@ namespace SSController.Controllers
             return container.IPAddress;
         }
 
-        // Set ip
+        // Control container
         [HttpPost]
         public async Task<ActionResult<string>> Post([FromQuery] string command)
         {
-            // Create IAzure and check the container.
-            var container = await this.GetContainerAsync();
-            if (container == null)
+            IContainerGroup container = null;
+            if (new string[] { "restart", "stop" }.Contains(command))
             {
-                return this.BadRequest("No container found.");
+                container = await this.azureService.GetContainerAsync();
+                if (container == null)
+                {
+                    return this.BadRequest("No container found.");
+                }
             }
 
-            string res;
             switch (command)
             {
                 case "restart":
                     await container.RestartAsync();
-                    res = "Success";
-                    break;
+                    return "Successfully Started.";
+                case "stop":
+                    await container.StopAsync();
+                    return "Successfully Stopped.";
+                case "create":
+                    var ct = await this.azureService.CreateContainerAsync();
+                    return ct.IPAddress;
+                case "remove":
+                    await this.azureService.RemoveContainerAsync();
+                    return "Successfully Removed.";
                 default:
-                    res = "No command";
-                    break;
+                    return "No Command.";
             }
-
-            return res;
-        }
-
-        private string GetIpFilePath()
-        {
-            return Path.Combine(IOUtils.GetDataFolderPath(), "ip.txt");
-        }
-
-        private async Task<IContainerGroup> GetContainerAsync()
-        {
-            // Get Azure auth file for login.
-            var client = this.blobClientProvider.Create("personal0");
-            string authFilePath = Path.Combine(IOUtils.GetDataFolderPath(), ".azureauth");
-            await client.DownloadAllTextAsync("secret/azure.azureauth", authFilePath);
-
-            var azure = Azure.Authenticate(authFilePath).WithDefaultSubscription();
-            return azure.ContainerGroups.ListByResourceGroup("gp-japaneast-ctnr").FirstOrDefault();
         }
     }
 }
